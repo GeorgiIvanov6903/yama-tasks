@@ -25,7 +25,6 @@ test ('plan a trip from SF to LA', async ({ context, page }) => {
 
   const mapPageNewTab = new MapPage(newTabPage);
   
-  await newTabPage.waitForLoadState();
   await mapPageNewTab.handlePopups();
   await mapPageNewTab.launchTripButton.click({ delay: 100});
   await mapPageNewTab.handlePopups();
@@ -48,7 +47,6 @@ test('check maximum number of stops', async ({ context, page }) => {
 
   const mapPageNewTab = new MapPage(newTabPage);
   
-  await newTabPage.waitForLoadState();
   await mapPageNewTab.handlePopups();
   await mapPageNewTab.searchAndAddStop('Salinas');
   await mapPageNewTab.launchTripButton.click({ delay: 100});
@@ -72,11 +70,9 @@ test('launch trip with three stops and edit a stop', async ({ context, page }) =
 
   const mapPageNewTab = new MapPage(newTabPage);
   
-  await newTabPage.waitForLoadState();
   await mapPageNewTab.handlePopups();
   await mapPageNewTab.searchAndAddStop('Salinas');
   await mapPageNewTab.launchTripButton.click({ delay: 100});
-  await newTabPage.waitForLoadState();
   await mapPageNewTab.handlePopups();
   await mapPageNewTab.waypointCountdownBanner.waitFor({ state: 'visible', timeout: 10000 });
   await expect(mapPageNewTab.waypointCountdownBanner).toContainText('No Free Waypoints Left');
@@ -86,8 +82,8 @@ test('launch trip with three stops and edit a stop', async ({ context, page }) =
   await expect(mapPageNewTab.discoverCardButton).not.toBeVisible({ timeout: 5000 });
 });
 
-// Positive test: Create a trip and add a stop from the map
-test('create a trip and add a stop from the map', async ({ context, page }) => {
+// Positive test: Create a round trip
+test('create a round trip', async ({ context, page }) => {
   const mapPage = new MapPage(page);
   await mapPage.goto();
   await mapPage.handlePopups();
@@ -100,13 +96,17 @@ test('create a trip and add a stop from the map', async ({ context, page }) => {
 
   const mapPageNewTab = new MapPage(newTabPage);
   
-  await newTabPage.waitForLoadState();
   await mapPageNewTab.handlePopups();
   await mapPageNewTab.launchTripButton.click({ delay: 100});
-  //await newTabPage.waitForLoadState();
   await mapPageNewTab.handlePopups();
-  await mapPageNewTab.clickMapPoi('Hearst Castle');
-  await mapPageNewTab.addButton.click({ delay: 100 });
-  await newTabPage.waitForLoadState();
+  await mapPageNewTab.routingOptionsButton.click({ delay: 100 });
+  await mapPageNewTab.alterRouteButton.click({ delay: 100 });
+  await mapPageNewTab.makeRoundTripButton.click({ delay: 100 });
+  await mapPageNewTab.makeRoundTripButton.click({ delay: 100 });
+  await mapPageNewTab.viewTripButton.click({ delay: 100 });
+  await mapPageNewTab.routingTripCloseButton.click({ delay: 100 });
   await expect(mapPageNewTab.discoverCardButton).not.toBeVisible({ timeout: 5000 });
+  await expect(await mapPageNewTab.getWaypointNumberByCity('San Francisco', 1)).toBe('1'); // First time city is found as a stop
+  await expect(await mapPageNewTab.getWaypointNumberByCity('Los Angeles', 1)).toBe('2'); // First time city is found as a stop
+  await expect(await mapPageNewTab.getWaypointNumberByCity('San Francisco', 2)).toBe('3'); // Second time city is found as a stop
 });
