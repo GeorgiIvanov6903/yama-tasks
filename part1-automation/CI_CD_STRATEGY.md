@@ -1,0 +1,13 @@
+- Triggers: Tests run automatically on every Pull Request (PR) targeting main or develop, and on subsequent commits to open PR branches.
+- Filters: Pipeline execution is skipped ([skip ci]) if a PR only modifies documentation (e.g., *.md).
+- Parallelization Strategy: Playwright's native sharding feature will split the test suite across multiple parallel isolated containers. As the suite grows beyond 50+ specs, we will scale this via CircleCI's parallelism matrix to keep execution times under 5 minutes.
+- JUnit Dashboard Integration: By outputting results to a junit.xml format, failures hook directly into CircleCI's built-in Insights Dashboard, exposing exact failure stack traces cleanly inside the PR page.
+- GitHub Status Checks: Failed runs block the GitHub "Merge" capability until code modifications or test fixes are introduced.
+- Slack Webhook Notifications: Failed jobs push automated alerts to an engineering #qa-alerts channel containing the PR author's handle, the failing test name, and direct deep-links to the Playwright trace viewer files.
+- Automated Retries: Inside playwright.config.ts, retries: process.env.CI ? 2 : 0 is specified. If a test fails once but passes on a retry, it is flagged as Flaky (Amber Status). The build still passes to avoid blocking the deployment queue, but a ticket is opened.
+- Quarantine Protocol: If a spec fails sporadically across multiple unrelated PR runs, it is modified with test.skip() or moved into a tests/quarantine/ directory. Quarantined tests are stripped from the blocking PR gate pipeline.
+- Ownership Matrix: Every isolated test features an internal metadata tag mapping ownership (e.g., test('check stop limit @trip-planning', ...)). The engineering pod owning that product vertical owns fixing that quarantined flake within a standard 48-hour sprint window.
+
+Metric 1: Mean Time to Detect (MTTD) - Measures the elapsed time from a bug being committed to the automated suite catching it on a PR check. We want this under 10 minutes to give engineers immediate feedback before context switching.
+Metric 2: Flakiness Ratio - Computed as (Flaky Passing Runs / Total Suite Executions) * 100. A ratio rising above 2% indicates that hard sleeps or unstable selectors are degrading the pipeline, necessitating an architecture refactor milestone.
+Metric 3: Escape Rate - Tracks bugs that slipped through automation and were caught by users in production. Computed as (Production Bugs / Total Detected Bugs). If this increases, it alerts us that our test scenarios are missing critical edge cases, indicating a need to expand coverage.

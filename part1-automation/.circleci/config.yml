@@ -1,0 +1,63 @@
+version: 2.1
+
+orbs:
+  # Utilize the official Playwright orb to handle browser caching and environment setup
+  playwright: playwright/playwright@0.0.1 
+
+executors:
+  node-docker:
+    docker:
+      # Use the official Microsoft Playwright image which includes all required OS dependencies
+      - image: microsoft.com 
+    working_directory: ~/repo
+
+jobs:
+  run-tests:
+    executor: node-docker
+    parallelism: 2 # Split tests across 2 parallel execution containers to minimize runtime
+    steps:
+      - checkout
+
+      # Restore cached node_modules based on lockfile hash to bypass network installation overhead
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "package-lock.json" }}
+            - v1-deps-
+
+      - run:
+          name: Install Project Dependencies
+          command: npm ci
+
+      # Save the node_modules cache upon a clean package-lock state modification
+      - save_cache:
+          key: v1-deps-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+            - node_modules
+
+      - run:
+          name: Execute Playwright Automation Suite
+          command: |
+            # Inject CI environment parameters and shard tests natively across executing nodes
+            npx playwright test --shard=${CIRCLE_NODE_INDEX}/${CIRCLE_NODE_TOTAL}
+          environment:
+            CI: "true"
+
+      # Always compile and collect test results even if the execution step fails
+      - store_test_results:
+          path: test-results/junit.xml
+
+      # Preserve full visual artifacts (videos, screenshots, trace zip files) for debugging
+      - store_artifacts:
+          path: playwright-report
+          destination: playwright-html-report
+
+workflows:
+  pr-verification:
+    jobs:
+      - run-tests:
+          filters:
+            branches:
+              ignore:
+                - main
+                - develop

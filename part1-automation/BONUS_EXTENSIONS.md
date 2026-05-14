@@ -1,0 +1,5 @@
+● A visual regression testing approach and which tool you would recommend. - after some research, I found that currently we have two options for this. My first choice would have to be Applitools Eyes if we have enough budget to spare for it. Otherwise - Percy by Browserstack.
+● Accessibility testing considerations and how you would fold them into the automated suite. - @axe-core/playwright, because it runs high-speed automated audits natively inside the browser contexts during operational flows.
+● Performance testing examples or recommendations for the trip planning flow. - for Frontend, I suggest we capture Google's Core Web Vitals that are natively inside Playwright using the Chromium CDPSession. For Backend - Grafana k6, we can use it inside Playwright to stress-test the trip calculation routing engine.
+
+Total time invested: 6-7 hours.
